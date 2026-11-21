@@ -5,3 +5,8 @@ _*.png
 _*.cjs
 _*.html
 _*.log
+consensus_latest.json
+guba_snapshot.csv
+llm_focus_cache.json
+stance_cache.json
+run.log
