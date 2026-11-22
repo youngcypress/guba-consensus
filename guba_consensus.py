@@ -109,13 +109,7 @@ def llm_classify_stances(titles):
     todo = [t for t in dict.fromkeys(titles) if t not in cache]
     if not todo:
         return {t: cache[t] for t in titles if t in cache}
-    cfg = _llm_cfg()
-    sf_key = ''
-    env_path = AIHOT_ENV_FILE
-    if os.path.exists(env_path):
-        for line in open(env_path, encoding='utf-8'):
-            if line.strip().startswith('SF_API_KEY='):
-                sf_key = line.split('=', 1)[1].strip()
+    sf_key = _sf_key()
     if not sf_key:
         return {t: cache[t] for t in titles if t in cache}
     BATCH = 15
@@ -209,20 +203,18 @@ def fetch_bar(code, pages=1, timeout=10, retries=2):
     return rows
 
 
-def _llm_cfg():
-    cfg = {'LLM_BASE_URL': 'https://api.xiaomimimo.com/v1', 'LLM_MODEL': 'mimo-v2.6-flash',
-           'LLM_REASONING_TOKENS': '4000', 'LLM_API_KEY': ''}
+def _sf_key():
+    """从 aihot .env 读硅基流动 key（与立场分类同一通道，免费档）"""
     env_path = AIHOT_ENV_FILE
     if os.path.exists(env_path):
         for line in open(env_path, encoding='utf-8'):
-            for k in ('LLM_BASE_URL', 'LLM_MODEL', 'LLM_REASONING_TOKENS', 'LLM_API_KEY'):
-                if line.strip().startswith(k + '='):
-                    cfg[k] = line.split('=', 1)[1].strip()
-    return cfg
+            if line.strip().startswith('SF_API_KEY='):
+                return line.split('=', 1)[1].strip()
+    return ''
 
 
 def llm_focus(name, titles, keywords, bull, bear):
-    """MIMO 生成讨论焦点+驱动消息（按输入哈希缓存，数据不变不重复调用）"""
+    """免费 Qwen 生成讨论焦点+驱动消息（按输入哈希缓存，数据不变不重复调用）"""
     if not titles and not keywords:
         return None
     inp = '|'.join(titles[:10]) + '||' + ','.join(keywords)
@@ -235,8 +227,8 @@ def llm_focus(name, titles, keywords, bull, bear):
             cache = {}
     if key in cache:
         return cache[key]
-    cfg = _llm_cfg()
-    if not cfg['LLM_API_KEY']:
+    sf_key = _sf_key()
+    if not sf_key:
         return None
     lines = '\n'.join(f'{i+1}. {t}' for i, t in enumerate(titles[:10]))
     prompt = (f'你是A股散户舆情分析师。根据{name}股吧的帖子标题，判断散户的核心讨论焦点和驱动消息。\n'
@@ -244,16 +236,16 @@ def llm_focus(name, titles, keywords, bull, bear):
               f'关键词：{"、".join(keywords) or "（无）"}\n'
               f'情绪词频：利多{bull}次，利空{bear}次\n'
               f'只输出JSON：{{"focus": "一句话概括讨论焦点(25字内)", "driver": "导致讨论热度的具体消息或事件(25字内，没有就写无明确驱动)"}}')
-    body = {'model': cfg['LLM_MODEL'],
+    body = {'model': 'Qwen/Qwen2.5-14B-Instruct',
             'messages': [{'role': 'user', 'content': prompt}],
             'temperature': 0.3,
-            'max_tokens': 800 + int(cfg['LLM_REASONING_TOKENS'])}
+            'max_tokens': 400}
     try:
-        req = urllib.request.Request(cfg['LLM_BASE_URL'].rstrip('/') + '/chat/completions',
+        req = urllib.request.Request('https://api.siliconflow.cn/v1/chat/completions',
                                      data=json.dumps(body).encode('utf-8'), method='POST',
                                      headers={'content-type': 'application/json',
-                                              'authorization': 'Bearer ' + cfg['LLM_API_KEY']})
-        with urllib.request.urlopen(req, timeout=120) as r:
+                                              'authorization': 'Bearer ' + sf_key})
+        with urllib.request.urlopen(req, timeout=60) as r:
             data = json.loads(r.read().decode('utf-8'))
         content = (data.get('choices') or [{}])[0].get('message', {}).get('content') or ''
         m = re.search(r'\{.*\}', content, re.S)
