@@ -119,7 +119,7 @@ def llm_classify_stances(titles):
         prompt = ('判断每条A股股吧标题的操作立场，四选一：买入/卖出/持有/观望（含踏空、等待）。\n'
                   f'标题：\n{lines}\n'
                   f'只输出JSON数组，与标题一一对应，如 ["买入","观望"]')
-        body = {'model': 'Qwen/Qwen2.5-14B-Instruct',
+        body = {'model': 'Qwen/Qwen2.5-7B-Instruct',
                 'messages': [{'role': 'user', 'content': prompt}],
                 'temperature': 0, 'max_tokens': 400}
         try:
@@ -236,7 +236,7 @@ def llm_focus(name, titles, keywords, bull, bear):
               f'关键词：{"、".join(keywords) or "（无）"}\n'
               f'情绪词频：利多{bull}次，利空{bear}次\n'
               f'只输出JSON：{{"focus": "一句话概括讨论焦点(25字内)", "driver": "导致讨论热度的具体消息或事件(25字内，没有就写无明确驱动)"}}')
-    body = {'model': 'Qwen/Qwen2.5-14B-Instruct',
+    body = {'model': 'Qwen/Qwen2.5-7B-Instruct',
             'messages': [{'role': 'user', 'content': prompt}],
             'temperature': 0.3,
             'max_tokens': 400}

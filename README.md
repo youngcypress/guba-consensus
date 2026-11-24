@@ -56,7 +56,7 @@ python guba_consensus.py --push
 
 | 步骤 | 模型 |
 |------|------|
-| 立场分类、焦点/驱动消息 | 硅基流动免费 `Qwen/Qwen2.5-14B-Instruct`（读 `.env` 的 `SF_API_KEY`） |
+| 立场分类、焦点/驱动消息 | 硅基流动免费 `Qwen/Qwen2.5-7B-Instruct`（读 `.env` 的 `SF_API_KEY`） |
 | 向量（归组旁路，引擎侧） | `BAAI/bge-m3` 免费档 |
 
 不再调用 MIMO。
