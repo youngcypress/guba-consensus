@@ -382,7 +382,8 @@ def build_consensus(agg_list, meta):
         p = prev.get(a['code'])
         # p=0（限流空跑）无法算比率，须区分"缺失(None)"与"零"
         a['post_mom'] = round((a['posts_24h'] - p) / p, 2) if (p is not None and p > 0) else None
-        a['keywords'] = [w for w in a['keywords'] if w not in a['name'] and a['name'] not in w]
+        # >14字必是整句标题混入（降级快照列错位历史数据），关键词只留短词
+        a['keywords'] = [w for w in a['keywords'] if len(w) <= 14 and w not in a['name'] and a['name'] not in w]
         pol = a['bull'] + a['bear']
         a['score_agree'] = round(max(a['bull'], a['bear']) / pol * 100) if pol >= 5 else 50
 
